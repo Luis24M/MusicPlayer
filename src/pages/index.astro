@@ -1,0 +1,223 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { songs } from "../lib/data";
+---
+
+<script>
+  const play = document.querySelector("#play") as HTMLButtonElement;
+  const audio = document.querySelector("audio");
+  window.addEventListener("load", () => {
+    let duration = audio.duration;
+    console.log(duration);
+    const musicDuration = document.getElementById("duration");
+    let durationMinutes = Math.floor(duration / 60);
+    let durationSeconds = Math.floor(duration % 60);
+    musicDuration.innerText = `${durationMinutes}:${durationSeconds}`;
+  });
+
+  play?.addEventListener("click", () => {
+    if (audio.paused) {
+      audio.play();
+      play.innerHTML = `<img src="img/Stop_and_play_fill.svg" alt="play button" width="32" height="32"/>`;
+    } else {
+      audio.pause();
+      play.innerHTML = `<img src="img/Play_fill.svg" alt="pause button" width="32" height="32"/>`;
+    }
+  });
+  const next = document.getElementById("next") as HTMLButtonElement;
+  let currentSongIndex = 0;
+  import { songs } from "../lib/data";
+  next?.addEventListener("click", () => {
+    if (currentSongIndex < songs.length - 1) {
+      currentSongIndex += 1;
+    } else {
+      currentSongIndex = 0;
+    }
+    update();
+    progressBar.style.width = "0%";
+  });
+
+  const back = document.getElementById("back") as HTMLButtonElement;
+  back?.addEventListener("click", () => {
+    if (currentSongIndex === 0) {
+      currentSongIndex = songs.length - 1;
+    } else {
+      currentSongIndex -= 1;
+    }
+    update();
+  });
+
+  const update = () => {
+    const songImage = document.querySelector("#song-image") as HTMLImageElement;
+    const songTitle = document.querySelector("#song-title");
+    const songArtist = document.querySelector("#song-artist");
+    console.log(songs[currentSongIndex]);
+    songImage.src = songs[currentSongIndex].image;
+    songImage.alt = songs[currentSongIndex].title;
+    songTitle.textContent = songs[currentSongIndex].title;
+    songArtist.textContent = songs[currentSongIndex].artist;
+    audio.src = songs[currentSongIndex].song;
+    play.innerHTML = `<img src="img/Play_fill.svg" alt="pause button" width="32" height="32"/>`;
+  };
+
+  const progressBar = document.getElementById(
+    "progress-bar"
+  ) as HTMLInputElement;
+  const progressArea = document.getElementById("progress-area") as HTMLInputElement;
+  audio?.addEventListener("timeupdate", (e) => {
+    const currentTime = e.target.currentTime;
+    const durationTime = e.target.duration;
+    let progressWidth = (currentTime / durationTime) * 100;
+    progressBar.style.width = `${progressWidth}%`;
+    if (audio.ended) {
+      next.click();
+      play.click();
+    }
+    let musicCurrentTime = document.getElementById("currentTime"),
+      musicDuration = document.getElementById("duration");
+    audio?.addEventListener("loadeddata", () => {
+      let duration = audio.duration;
+      let durationMinutes = Math.floor(duration / 60);
+      let durationSeconds = Math.floor(duration % 60);
+      musicDuration.innerText = `${durationMinutes}:${durationSeconds}`;
+    });
+    let currentTimeSecondsString = "";
+    let currentTimeMinutes = Math.floor(currentTime / 60);
+    let currentTimeSeconds = Math.floor(currentTime % 60);
+    currentTimeSecondsString = `${currentTimeSeconds}`;
+    if (currentTimeSeconds < 10) {
+      currentTimeSecondsString = `0${currentTimeSeconds}`;
+    }
+    musicCurrentTime.innerText = `${currentTimeMinutes}:${currentTimeSecondsString}`;
+  });
+
+  let isDragging = false;
+let currentDragOffset;
+
+progressArea.addEventListener("click", (e) => {
+  let progressWidth = progressArea.clientWidth;
+  let clickedOffsetX = e.offsetX;
+  let songDuration = audio.duration;
+  audio.currentTime = (clickedOffsetX / progressWidth) * songDuration;
+});
+
+progressArea.addEventListener("mousedown", dragStart);
+progressArea.addEventListener("mouseup", dragEnd);
+progressArea.addEventListener("mousemove", drag);
+
+function dragStart(e) {
+  isDragging = true;
+  currentDragOffset = e.offsetX - progressBar.clientWidth;
+}
+
+function dragEnd() {
+  isDragging = false;
+}
+
+function drag(e) {
+  if (!isDragging) return;
+
+  let progressWidth = progressArea.clientWidth;
+  let clickedOffsetX = e.offsetX - currentDragOffset;
+  let songDuration = audio.duration;
+
+  if (clickedOffsetX < 0) {
+    clickedOffsetX = 0;
+  } else if (clickedOffsetX > progressWidth) {
+    clickedOffsetX = progressWidth;
+  }
+
+  let newProgressWidth = (clickedOffsetX / progressWidth) * 100;
+  progressBar.style.width = `${newProgressWidth}%`;
+  audio.currentTime = (clickedOffsetX / progressWidth) * songDuration;
+}
+</script>
+
+<Layout title="Music Player">
+  <main class="flex items-center justify-center h-screen">
+    <div
+      class="p-5 bg-[#212936] rounded-3xl w-[400px] flex flex-col items-center bg-opacity-80"
+    >
+      <img
+        id="song-image"
+        class="rounded-3xl w-full"
+        src={songs[0].image}
+        alt={songs[0].title}
+        width="360"
+        height="338"
+      />
+      <h2 id="song-title" class="text-[#E5E7EB] mt-4">{songs[0].title}</h2>
+      <h3 id="song-artist" class="text-[#4D5562] mt-1 mb-6">
+        {songs[0].artist}
+      </h3>
+      <div class="flex justify-between w-full text-[#4D5562]">
+          <p class="" id="currentTime">0:00</p>
+          <p class="" id="duration">0:00</p>
+      </div>
+      <div id="progress-area" class="h-1 w-full bg-[#E5E7EB] rounded-lg mb-[28px]">
+        <div id="progress-bar" class="h-1 w-0 bg-[#C93B76] rounded-lg">
+        </div>
+      </div>
+      <div class="">
+        <audio id="song-audio" src={songs[0].song}></audio>
+        <button id="back" class="text-[#4D5562] hover:text-[#E5E7EB] transition duration-300">
+          <svg
+            width="32"
+            height="32"
+            viewBox="0 0 32 32"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M17.8136 14.2517L23.6953 10.9841C25.0284 10.2435 26.6666 11.2074 26.6666 12.7324V19.2676C26.6666 20.7926 25.0284 21.7566 23.6953 21.016L17.8136 17.7483C16.442 16.9863 16.442 15.0137 17.8136 14.2517Z"
+              fill="currentColor"></path>
+            <path
+              d="M10.6666 22.6667L10.6666 9.33335"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"></path>
+            <path
+              d="M5.33325 22.6667L5.33325 9.33335"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"></path>
+          </svg>
+        </button>
+        <button
+          id="play"
+          class="hover:scale-105 bg-[#C93B76] text-[#E5E7EB] px-2 py-2 rounded-full mx-5 my-2 duration-300"
+        >
+          <img
+            src="img/Play_fill.svg"
+            width="32"
+            height="32"
+            alt="play button"
+          />
+        </button>
+        <button id="next" class="text-[#4D5562] hover:text-[#E5E7EB] duration-300">
+          <svg
+            width="32"
+            height="32"
+            viewBox="0 0 32 32"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M14.1864 14.2517L8.30466 10.9841C6.9716 10.2435 5.33337 11.2074 5.33337 12.7324V19.2676C5.33337 20.7926 6.9716 21.7566 8.30466 21.016L14.1864 17.7483C15.558 16.9863 15.558 15.0137 14.1864 14.2517Z"
+              fill="currentColor"></path>
+            <path
+              d="M21.3334 22.6667L21.3334 9.33335"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"></path>
+            <path
+              d="M26.6667 22.6667L26.6667 9.33335"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </main>
+</Layout>
